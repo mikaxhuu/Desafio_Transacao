@@ -1,18 +1,10 @@
 from datetime import datetime, date
 import textwrap
 
-usuarios = {
+usuarios = {}
 
-    "Cliente" : {"Agência": "", "Conta": "", "Saldo": ""}, 
-}
-
-opcao = ""
 LIMITE_TRANSACAO = 10
-qntd_transacao = 0
-data_hora = datetime.now()
-data_hoje = date.today()
 mascara_ptbr = "%d/%m/%Y %H:%M"
-extrato = ""
 
 def menu():
     menu = """\n
@@ -30,126 +22,98 @@ def menu():
 
 
 def registrar_conta():
-
     nome = input("\nQual é o nome do cliente para ser registrado? ")
     agencia = input("\nDigite a agência (Exemplo: 00000-00): ")
     num_conta = input("\nDigite o número da conta (Exemplo: 0000): ")
 
-    cliente_registrado = {"Nome": {nome}, "Agência": {agencia}, "Conta" : {num_conta}, "Saldo": 0.0}
-
-    print()
-
-    return "Conta registrada com sucesso!"
+    if nome in usuarios:
+        print("Cliente já registrado!")
+    else:
+        usuarios[nome] = {"Agência": agencia, "Conta": num_conta, "Saldo": 0.0, "Transacoes": 0, "Extrato": ""}
+        print("Conta registrada com sucesso!")
 
 
 def acessar_conta(nome_busca):
-
-    nome_busca = input("\nDigite o nome da sua conta: ")
-
-    for nome, nome_busca in usuarios:
-
-        usuarios.get(nome_busca, {})
-
-    print()
-
-    return "Busca feita!"
-
-def deposito(valor_deposito):
-
-    valor_deposito = float(input("\nInforme o valor para ser depositado: "))
-
-    saldo = usuarios["Saldo"]
-
-    if valor_deposito > 0:
-
-        if qntd_transacao < LIMITE_TRANSACAO:
-
-            saldo += valor_deposito
-            extrato += f"Depósito: R$ {valor_deposito:.2f} ás {data_hora.strftime(mascara_ptbr)}\n"
-            qntd_transacao + 1
-            print("Saque realizado com sucesso!")
-            print()
-
-        elif qntd_transacao == LIMITE_TRANSACAO:
-
-            print("\nVocê atingiu o limite de transações!")
-            print()
-
+    if nome_busca in usuarios:
+        print(f"Conta encontrada: Agência {usuarios[nome_busca]['Agência']}, Conta {usuarios[nome_busca]['Conta']}")
     else:
-        print("Operação falhou! O valor informado é inválido.")
-        print()
+        print("Conta não encontrada!")
 
-def sacar(valor_saque):
 
-    valor_saque = float(input("\nInforme o valor para ser sacado: "))
+def deposito(nome, valor_deposito):
+    if nome in usuarios:
+        if valor_deposito > 0:
+            if usuarios[nome]["Transacoes"] < LIMITE_TRANSACAO:
+                usuarios[nome]["Saldo"] += valor_deposito
+                data_hora = datetime.now()
+                usuarios[nome]["Extrato"] += f"Depósito: R$ {valor_deposito:.2f} às {data_hora.strftime(mascara_ptbr)}\n"
+                usuarios[nome]["Transacoes"] += 1
+                print("Depósito realizado com sucesso!")
+            else:
+                print("\nVocê atingiu o limite de transações!")
+        else:
+            print("Operação falhou! O valor informado é inválido.")
+    else:
+        print("Conta não encontrada!")
 
-    saldo = usuarios["Saldo"]
 
-    if valor_saque <= saldo and valor_saque > 0:
+def sacar(nome, valor_saque):
+    if nome in usuarios:
+        if valor_saque > 0 and valor_saque <= usuarios[nome]["Saldo"]:
+            if usuarios[nome]["Transacoes"] < LIMITE_TRANSACAO:
+                usuarios[nome]["Saldo"] -= valor_saque
+                data_hora = datetime.now()
+                usuarios[nome]["Extrato"] += f"Saque: R$ {valor_saque:.2f} às {data_hora.strftime(mascara_ptbr)}\n"
+                usuarios[nome]["Transacoes"] += 1
+                print("Saque realizado com sucesso!")
+            else:
+                print("\nVocê atingiu o limite de transações!")
+        else:
+            print("Operação falhou! Saldo insuficiente ou valor inválido.")
+    else:
+        print("Conta não encontrada!")
 
-        if qntd_transacao < LIMITE_TRANSACAO:
 
-            saldo -= valor_saque
-            extrato += f"Saque: R$ {valor_saque:.2f} ás {data_hora.strftime(mascara_ptbr)}\n"
-            qntd_transacao + 1
-            print("Saque realizado com sucesso!")
-            print()
+def exibir_extrato(nome):
+    if nome in usuarios:
+        print("================ EXTRATO ================")
+        print("Não foram realizadas movimentações." if not usuarios[nome]["Extrato"] else usuarios[nome]["Extrato"])
+        print(f"\nSaldo: R$ {usuarios[nome]['Saldo']:.2f} às {datetime.now().strftime(mascara_ptbr)}\n")
+    else:
+        print("Conta não encontrada!")
 
-        elif qntd_transacao == LIMITE_TRANSACAO:
-
-            print("\nVocê atingiu o limite de transações!")
-            print()
-
-    if valor_saque > saldo:
-
-        print("\nVocê não tem saldo o suficiente!")
-        print()
-
-def exibir_extrato():
-
-    saldo = usuarios["Saldo"]
-    
-    print("================ EXTRATO ================")
-    print("Não foram realizadas movimentações." if not extrato else extrato)
-    print(f"\nSaldo: R$ {saldo:.2f} ás {data_hora.strftime(mascara_ptbr)}\n")
-    print()
 
 def main():
-
-    usuarios["Cliente"]
-
     while True:
-        print = (f"\nHoje é dia {data_hoje}")
+        print(f"\nHoje é dia {date.today().strftime('%d/%m/%Y')}")
         opcao = menu()
 
-        if opcao == "d":
-
-            valor = float(input(deposito(valor)))
-
-        elif opcao == "s":
-
-            valor = float(input(sacar(valor)))
-
-        elif opcao == "e":
-
-            exibir_extrato()
-
-        elif opcao == "r":
-
+        if opcao == "r":
             registrar_conta()
 
         elif opcao == "a":
-
             nome_busca = input("\nDigite o nome da conta: ")
-
             acessar_conta(nome_busca)
+
+        elif opcao == "d":
+            nome = input("\nDigite o nome da conta: ")
+            valor = float(input("Informe o valor para ser depositado: "))
+            deposito(nome, valor)
+
+        elif opcao == "s":
+            nome = input("\nDigite o nome da conta: ")
+            valor = float(input("Informe o valor para ser sacado: "))
+            sacar(nome, valor)
+
+        elif opcao == "e":
+            nome = input("\nDigite o nome da conta: ")
+            exibir_extrato(nome)
 
         elif opcao == "q":
             break
 
         else:
             print("\nOperação inválida, por favor selecione novamente a operação desejada.")
-
 
 
 main()
